@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 
@@ -33,6 +33,7 @@ export class AuthService {
     const payload = {
       sub: user.id,
       username: user.username,
+      role: user.role,
     };
 
     return this.jwtService.sign(payload);
@@ -44,6 +45,8 @@ export class AuthService {
         user.username === username &&
         bcrypt.compareSync(password, user.password),
     );
+
+    if (!user) throw new NotFoundException('User not found!');
 
     return user;
   }
