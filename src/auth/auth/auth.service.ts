@@ -1,53 +1,31 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-import * as bcrypt from 'bcrypt';
-
-const users = [
-  {
-    id: 1,
-    username: 'user1@user.com',
-    password: '$2b$10$EecWnvyBtN4ttSJWILAjs.lnOfVejB7ABCxWGLS0OUCEcbcnwTu5K',
-    role: 'admin',
-  },
-  {
-    id: 2,
-    username: 'user2@user.com',
-    password: '$2b$10$EecWnvyBtN4ttSJWILAjs.lnOfVejB7ABCxWGLS0OUCEcbcnwTu5K',
-    role: 'user',
-  },
-  {
-    id: 3,
-    username: 'user3@user.com',
-    password: '$2b$10$EecWnvyBtN4ttSJWILAjs.lnOfVejB7ABCxWGLS0OUCEcbcnwTu5K',
-    role: 'user',
-  },
-];
+import { HttpService } from '@nestjs/axios';
+import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { firstValueFrom } from 'rxjs';
 
 @Injectable()
 export class AuthService {
-  constructor(private jwtService: JwtService) {}
+  constructor(
+    private http: HttpService,
+    private configService: ConfigService,
+  ) {}
 
-  login(username, password) {
-    const user = this.validateCredential(username, password);
-
-    const payload = {
-      sub: user.id,
-      username: user.username,
-      role: user.role,
-    };
-
-    return this.jwtService.sign(payload);
-  }
-
-  validateCredential(username: string, password: string) {
-    const user = users.find(
-      (user) =>
-        user.username === username &&
-        bcrypt.compareSync(password, user.password),
+  async login(username: string, password: string) {
+    const { data } = await firstValueFrom(
+      this.http.post(
+        `http://host.docker.internal:8080/auth/realms/${this.configService.get(
+          'REALM',
+        )}/protocol/openid-connect/token`,
+        new URLSearchParams({
+          client_id: this.configService.get('CLIENT_ID'),
+          client_secret: this.configService.get('CLIENT_SECRET'),
+          grant_type: this.configService.get('GRANT_TYPE'),
+          username,
+          password,
+        }),
+      ),
     );
 
-    if (!user) throw new NotFoundException('User not found!');
-
-    return user;
+    return data;
   }
 }
