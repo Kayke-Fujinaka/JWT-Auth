@@ -29,7 +29,7 @@ const payload: IPayload = {
 const headerEncoded = base64Url.encode(JSON.stringify(header));
 const payloadEncoded = base64Url.encode(JSON.stringify(payload));
 
-const key: IKey = process.env.JWT_KEY;
+const key: IKey = process.env.PUBLIC_KEY;
 
 const signature = crypt
   .createHmac('sha256', key)
